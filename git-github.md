@@ -1,5 +1,34 @@
 # Git - GitHub
+### Overview (Index)
 
+1. [Your Config Settings](#your-config-settings)  
+2. [Clone & Status](#clone--status)  
+3. [Add & Commit](#add--commit)  
+4. [Push Command](#push-command)  
+5. [Init Command](#init-command)  
+6. [Workflow](#workflow)  
+7. [Git Branches](#git-branches)  
+8. [Branch Commands](#branch-commands)  
+9. [Merging Code](#merging-code)  
+10. [Pull Command](#pull-command)  
+11. [Resolving Merge Conflicts](#resolving-merge-conflicts)  
+12. [Undoing Changes](#undoing-changes)  
+    - [Case 1: Staged Changes](#case-1-staged-changes)  
+    - [Case 2: Committed Changes (One Commit)](#case-2-committed-changesfor-one-commit)  
+    - [Case 3: Committed Changes (Many Commits)](#case-3-committed-changesfor-many-commits)  
+13. [Fork](#fork)
+## Your config settings
+Github has a lot of settings that you can change. You can change your username, email, and other settings. Whenever you checkpoint your changes, git will add some information about your such as your username and email to the commit. There is a git config file that stores all the settings that you have changed. You can make settings like what editor you would like to use etc. There are some global settings and some repository specific settings.
+
+Let’s setup your email and username in this config file. I would recommend you to create an account on github and then use the email and username that you have created.
+```
+git config --global user.email "your-email@example.com"
+git config --global user.name "Your Name"
+```
+Now we can check your config settings:
+```
+git config --list
+```
 ## Clone & Status
 
 Clone - Cloning repository on our local machine

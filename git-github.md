@@ -17,6 +17,7 @@
     - [Case 2: Committed Changes (One Commit)](#case-2-committed-changesfor-one-commit)  
     - [Case 3: Committed Changes (Many Commits)](#case-3-committed-changesfor-many-commits)  
 13. [Fork](#fork)
+14. [References](#references)
 ## Your config settings
 Github has a lot of settings that you can change. You can change your username, email, and other settings. Whenever you checkpoint your changes, git will add some information about your such as your username and email to the commit. There is a git config file that stores all the settings that you have changed. You can make settings like what editor you would like to use etc. There are some global settings and some repository specific settings.
 
@@ -81,8 +82,8 @@ git push
 ## Workflow
 ![github Terminology](<img/github Terminology.jpg>)
 
-## Git Branches
-
+##  
+![alt text](<img/Git Branches.webp>)
 ## Branch Commands
 ```
 git branch (to check branch)
@@ -168,3 +169,7 @@ A fork is a copy of a repository that you create in your own account, typically 
 - Submit your changes back to the original project via a pull request.
 
 Forks are commonly used for contributing to open-source projects or developing features independently.
+
+## References
+- https://youtu.be/Ez8F0nW6S-w?si=TayaST7-nchy-pHI
+- https://docs.chaicode.com/git-and-github/

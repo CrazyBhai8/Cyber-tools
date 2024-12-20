@@ -83,7 +83,7 @@ git push
 ![github Terminology](<img/github Terminology.jpg>)
 
 ##  
-![alt text](<img/Git Branches.webp>)
+![Git Branches](<img/Git Branches.webp>)
 ## Branch Commands
 ```
 git branch (to check branch)

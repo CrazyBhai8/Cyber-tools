@@ -28,7 +28,7 @@ git config --global user.name "Your Name"
 ```
 Now we can check your config settings:
 ```
-git config --list
+1
 ```
 ## Clone & Status
 
@@ -72,6 +72,18 @@ git branch (to check branch)
 git branch -M main (to rename branch)
 git push origin main
 ```
+- `git init` - used to create a new git repo
+- `git remote add origin <link>`
+   Connects your local project to a remote repository so you can upload (push) your code to it. Replace <link> with the URL of your remote repository.
+- `git remote -v`
+   Verifies the remote repository links.
+- `git branch`
+   Lists all the branches in your repository.
+- `git branch -M main`
+   Renames the current branch to 'main'.
+- `git push origin main`
+   Pushes your code to the 'main' branch of the remote repository.
+
 
 The -u flag in git push -u origin main sets a link between your local branch (main) and the remote branch. After this, you can just use git push or git pull without typing the branch name every time.
 
@@ -79,6 +91,15 @@ The -u flag in git push -u origin main sets a link between your local branch (ma
 git push -u origin main (now you can only write)
 git push 
 ```
+
+### Force Push (If You’re Sure About Overwriting)
+If you’re certain your local changes should overwrite the remote branch, you can force push:
+```
+git push origin main --force
+```
+**⚠️ Warning**: This will overwrite the remote branch and discard any remote changes. Use this only if you're sure the remote changes aren't needed.
+
+
 ## Workflow
 ![github Terminology](<img/github Terminology.jpg>)
 

@@ -1,4 +1,7 @@
+### TCM courses
+https://www.certcommunity.org/forum/topic/17508-offer-tcm-security-all-courses-working-links/#replyForm
 
+![alt text](image.png)
 ### For Finding Sub-Domains:
 - **crt.sh**: Browser
 - **Subfinder**: Kali
@@ -182,3 +185,48 @@ https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Server%20Side%20
 https://github.com/kleiton0x00/Advanced-SQL-Injection-Cheatsheet?tab=readme-ov-file
 
 ### SQL 
+For crawling
+
+    sqlmap -u <URL> --crawl=<depth> [options]
+    sqlmap -u "http://example.com" --crawl=2 --batch --threads=7
+includes batch and threads options for my compatibility 
+
+```
+sqlmap -u "http://url.com" --dbs --threads=7 --batch --risk 2 --level 4 
+```
+### post request
+```
+sqlmap -u "http://example.com/login" --data="username=admin&password=test" --method=POST --level=3 --risk=2 --dbs --batch --threads=7
+```
+## File Upload Vulnerability
+
+### what can we do in this vulnerability.
+- can lead to RCE(Remote Code Execution)
+- Web Shells Upload Deface Website
+
+### what we need and what website check.
+Website: Upload Function- Files<br>
+Let suppose I am uploading a file named example.php<br>
+example.php -upload :- when it's upload then server checks below Functions.
+- name
+- Extention :  `exe,txt, php, jsp,html, Etc.`
+- Content Type:- `image/jpeg, image/png, text/html,ETC`
+- size:- size of file
+
+let suppose when an attacker uploading a file, web application is not validating it before execte.
+
+### How to execute vulnerability
+some web-shells:https://github.com/backdoorhub/shell-backdoor-list?tab=readme-ov-file<br>
+some malicious images:- https://github.com/fuzzdb-project/fuzzdb/tree/master/attack/file-upload/malicious-images
+
+**Simple File Upload**: 
+first we download any web shells from the browser. and after upload it in website if website has not any protection then file will be uploaded and we can say the website have this vulnerability.
+
+**if the website filtering by: content type (verification):**
+ we can intercept the request. and change the content type  `application/octet-stream(any)` to `image/jpeg`
+
+ **Extension verification**:- change the file name web_shell.php to web_shell.php.jpeg and also change the content type. image/jpega
+
+ tools for this vulnerability:- <br>
+ - write in browser File Upload Vulnerability github
+ - https://github.com/almandin/fuxploider :- fuxploider

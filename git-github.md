@@ -28,7 +28,7 @@ git config --global user.name "Your Name"
 ```
 Now we can check your config settings:
 ```
-1
+git config --list --global
 ```
 ## Clone & Status
 

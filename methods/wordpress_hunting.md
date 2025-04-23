@@ -160,7 +160,7 @@ XML-RPC is a protocol used to send remote commands to servers via XML over HTTP.
 
 ---
 
-### dorks:
+### dorks and payload:
 https://github.com/rm-onata/xmlrpc-attack
 
 ### Method 
@@ -182,6 +182,8 @@ https://github.com/rm-onata/xmlrpc-attack
 ```
 
 ### **Usage:**
+
+You can also use https://webhook.site/ as an alternative to https://postb.in.
 1. Replace `https://www.postb.in/YOUR_BIN_URL` with your Postb.in or Collaborator URL to capture requests.  
 2. Replace `https://www.TARGET.URL` with the target URL you want to test.  
 

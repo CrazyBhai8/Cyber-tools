@@ -1,7 +1,7 @@
 ### TCM courses
 https://www.certcommunity.org/forum/topic/17508-offer-tcm-security-all-courses-working-links/#replyForm
 
-![alt text](image.png)
+![alt text](img/TCM%20approach.png)
 ### For Finding Sub-Domains:
 - **crt.sh**: Browser
 - **Subfinder**: Kali

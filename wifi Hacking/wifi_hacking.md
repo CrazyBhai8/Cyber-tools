@@ -582,3 +582,185 @@ Once you've saved and moved the captive portal login page into `/var/www/html`, 
   ```
 
 * If it's just a `<div>` or `<a>` element styled to look like a button, it won't submit the form unless JavaScript is present. Replace or modify it accordingly.
+
+---
+
+### The main components of a wifi networks are:
+1. A router broadcasting signal -> use wifi card with hostapd.
+2. A DHCP server to give IPs to clients -> use dnsmasq.
+3. A DNS server to handle dns requests -> use dnsmasq.
+---
+
+# 📡 `hostapd` + `dnsmasq` – Wi-Fi Testing Setup Notes
+
+---
+
+## 🔧 What Is `hostapd`?
+
+**hostapd** = *Host Access Point Daemon*
+
+### 🧠 Purpose:
+
+* Turns your Wi-Fi adapter into a **wireless access point (AP)**
+* Broadcasts SSID and handles client authentication (WPA2/WPA3)
+* Core component in creating custom Wi-Fi networks (rogue or test)
+
+### 🧪 Basic `hostapd.conf` Example:
+
+```conf
+interface=wlan0
+driver=nl80211
+ssid=FreeWifi
+hw_mode=g
+channel=6
+auth_algs=1
+wpa=2
+wpa_passphrase=hacktheplanet
+wpa_key_mgmt=WPA-PSK
+rsn_pairwise=CCMP
+```
+
+---
+
+## 🧠 What Is `dnsmasq`?
+
+**dnsmasq** = Lightweight DNS + DHCP server
+
+### 🔍 Purpose:
+
+* Assigns IP addresses to clients that connect to your AP (DHCP)
+* Resolves domain names to IP addresses (DNS)
+* Optionally can redirect DNS to a local server (for captive portals, phishing, etc.)
+
+### 🧪 Basic `dnsmasq.conf` Example:
+
+```conf
+interface=wlan0
+dhcp-range=192.168.10.10,192.168.10.100,12h
+dhcp-option=3,192.168.10.1
+dhcp-option=6,192.168.10.1
+server=8.8.8.8
+```
+
+---
+
+# 🛠️ Step-by-Step Setup Guide
+
+## 1. 🔌 Install Tools
+
+```bash
+sudo apt update
+sudo apt install hostapd dnsmasq
+```
+
+## 2. ❌ Stop Network Managers (if needed)
+
+```bash
+sudo systemctl stop NetworkManager
+sudo systemctl stop wpa_supplicant
+```
+
+---
+
+## 3. ⚙️ Create hostapd Config
+
+```bash
+sudo nano /etc/hostapd/hostapd.conf
+```
+
+Paste:
+
+```conf
+interface=wlan0
+driver=nl80211
+ssid=FreeWifi
+hw_mode=g
+channel=6
+auth_algs=1
+wpa=2
+wpa_passphrase=hacktheplanet
+wpa_key_mgmt=WPA-PSK
+rsn_pairwise=CCMP
+```
+
+Then link it:
+
+```bash
+sudo nano /etc/default/hostapd
+```
+
+Add:
+
+```conf
+DAEMON_CONF="/etc/hostapd/hostapd.conf"
+```
+
+---
+
+## 4. ⚙️ Configure dnsmasq
+
+```bash
+sudo nano /etc/dnsmasq.conf
+```
+
+Paste:
+
+```conf
+#Set the wifi interface
+interface=wlan0
+
+#Set the IP range that can be given to clients
+dhcp-range=10.0.0.10,10.0.0.100,8h
+
+#Set the gateway IP address
+dhcp-option=3,10.0.0.1
+
+#Set dns server address
+dhcp-option=6,10.0.0.1
+
+#Redirect all requests to 10.0.0.1
+address=/#/10.0.0.1
+```
+
+---
+
+## 5. 🌐 Set Static IP for AP
+
+```bash
+sudo ip link set wlan0 up
+sudo ip addr add 192.168.10.1/24 dev wlan0
+```
+
+---
+
+## 6. 🚀 Start Services
+
+### Terminal 1 – Start hostapd:
+
+```bash
+sudo hostapd /etc/hostapd/hostapd.conf
+```
+
+### Terminal 2 – Start dnsmasq:
+
+```bash
+sudo dnsmasq -C /etc/dnsmasq.conf
+```
+
+---
+
+## 7. Set IP and Subnet mask
+
+```
+ifconfig wlan0 10.0.0.1 netmask 255.255.255.0
+```
+---
+
+# 🧪 Use Cases
+
+* ✅ Legit Wi-Fi testing lab
+* 🧠 Captive portals (e.g. phishing or fake login)
+* 🎯 Rogue APs for social engineering
+* 🧬 Wi-Fi MITM attacks
+* 🪤 DNS redirection & spoofing
+* 📲 Testing client behavior (IoT, phones, etc.)

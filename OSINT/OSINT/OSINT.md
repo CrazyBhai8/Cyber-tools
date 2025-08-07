@@ -962,3 +962,384 @@ If the account has **dozens or hundreds of posts**, use a tool like:
 - Pre-configured Enviroment
 - Tool Compatibility
  
+
+### Download Instagram Content
+
+**Instaloader** is a tool to download picture/video along with their captions and metadata from an Instagram account.
+
+- Install: `pip install instaloader`
+- Go to documentation of [InstaLoader](https://instaloader.github.io/)
+
+it's a kali tool which help you to download posts,videos, followers, following etc.
+
+## <span style="color: rgb(36, 158, 240);">3\. Twitter / X OSINT</span>
+
+* * *
+
+### 3.1 Introduction
+
+X has over ca. 550 mil. monthly active users.
+
+- Users can tweet, share photos, video and add links.
+
+### 3.2 Recovering Deleted Tweets and Timestamps
+
+**Find a User ID of Twitter / X Profile**
+
+**User ID:** Every Twitter / X user has a unique identifier that's gets generated once an Instragram profile is created.
+
+- Example: 1430275132268883203
+- Press, `Ctrl + Shift + i` to run inspect elements
+- Search for `/profile_banners/` OR `identifier`
+
+**Find ID by website**  
+Find Twitter / X ID: https://commentpicker.com/twitter-id.php
+
+- Just paste Url OR Username. this website automatically featch your userID.
+
+**Extracting Timestamps from Posts and Comments**
+
+**TImestamp:** will show you the exact data and time when a post was posted.
+
+- Format: yyyy-MM-dd'T'HH:mm:ss
+
+**Steps to Extract the Timestamp:**
+
+1.  Go to the **target Twitter post or comment**.
+2.  Right-click the **post time/date** (e.g. *“8w”*, *“19 April”*).
+3.  Click **"Inspect"** (or press `Ctrl + Shift + I`).
+4.  In the source code, locate the `<time>` tag.
+5.  Copy the `datetime` value:  
+      `2025-04-19T16:52:04.000Z`
+6.  Go to: [timestamp-converter.com](https://www.timestamp-converter.com/)
+7.  Paste the timestamp into the converter.
+8.  You will see the **exact local time** in your time zone.
+
+### Indexed tweets
+
+Utilize search engine operators to discover indexed information on instagram profiles.
+
+```url
+site:twitter.com "Username"
+site:twitter.com "@Username"
+site:twitter.com/Username/status
+```
+
+### 3.3 Leveraging Search Operators to Find Specific Tweets
+
+**Twitter/X advanced search operators** allow you to **refine**, **filter**, and **extract** tweets based on specific users, dates, and interactions — extremely useful for SOCMINT and digital recon.
+
+### Common Twitter Search Operators
+
+- `from:username` → Shows all tweets **made by** that user
+- `to:username` → Shows all tweets **sent to** that user
+- `since:YYYY-MM-DD` → Filters tweets **starting from** a date
+- `until:YYYY-MM-DD` → Filters tweets **up to** a date (exclusive)
+
+**Example Search Query**
+
+```bash
+from:username since:2024-01-01 until:2024-01-15
+```
+
+This will return:
+
+> All tweets **from the user** posted between **January 1, 2024** and **January 14, 2024** (Note: `until` is *exclusive* of the date itself).
+
+### Summary
+
+- Analyze and save the username, bio, and profile picture.
+- Get the User ID
+- Posts/Commets Timestamp
+- Find any indexed Tweets
+- Use Twitter Operators
+
+## <span style="color: rgb(18, 107, 196);">4\. Linkedin OSINT</span>
+
+* * *
+
+### 4.1 Introduction
+
+<span style="color: rgb(18, 107, 196);">**Linkedin**</span> has over ca. 900 mil. users.
+
+- Users can post, share photos, video and add links.
+
+### 4.2 Discovering and Analysing LinkedIn Profiles
+
+**Search Filters**  
+Linkedin **Filters** help:
+
+- Narrow down search results
+- Save time and effort
+
+**Profile Overview**
+
+- Analying the target profile
+
+**Download Information**  
+Linedin makes it very easy for us to download someone's profile.
+
+- Go to target profile
+- Click on `more`
+- Click on `Save to PDF`  
+    You can download profile as resume
+
+### **4.3 Finding Hidden Names & Extracting Post Timestamps**
+
+This section covers two powerful LinkedIn OSINT techniques:
+
+- Extracting **exact timestamps** from posts and comments
+- Uncovering **redacted/hidden employee names** on company pages
+
+### **Extracting Post Timestamps**
+
+LinkedIn **encodes timestamps** in post and comment URLs. Here's how to decode them:
+
+#### For Posts
+
+1.  Copy the **Post URL**  
+    Example:
+    
+    ```
+    https://www.linkedin.com/feed/update/urn:li:activity:732589268174922370/
+    ```
+    
+2.  Extract the **Post ID**:
+    
+    ```
+    732589268174922370
+    ```
+    
+3.  Convert the Post ID to **binary**  
+    Use: [RapidTables Decimal to Binary](https://www.rapidtables.com/convert/number/decimal-to-binary.html)  
+    Example Output:
+    
+    ```
+    1010001001010101001000111110110010101101000001010000010
+    ```
+    
+4.  Take the **first 42 bits** of the binary value.
+    
+5.  Convert those 42 bits back to **decimal**  
+    Use: [Dan's Timestamp Tool](https://www.unixtimestamp.com/)  
+    Paste the decimal into the timestamp field.
+    
+
+his will reveal the **exact time the post was created** (in UTC or local).
+
+#### For Comments
+
+1.  Find the **three-dot menu** next to the comment.
+2.  Click **"Copy link to comment"**.
+3.  Extract the **comment ID** from the URL.
+4.  Repeat the **binary + timestamp** process above.
+
+### Alternative Tool: **Unfurl**
+
+For fast results:
+
+- Use [Unfurl Tool](https://dfir.blog/unfurl/)
+- Paste the **LinkedIn post or comment URL**
+- The tool will automatically extract the **timestamp and other metadata**
+
+## **Finding Redacted Names (Hidden LinkedIn Employees)**
+
+LinkedIn sometimes **censors employee names** on company profile pages — especially when you’re not logged in or if your account isn’t trusted.
+
+> Example: You visit a company’s “People” section and some entries just say "LinkedIn Member".
+
+### How to Reveal Hidden Names
+
+Use Google Dorks to bypass LinkedIn's frontend filters.
+
+#### 🔍 Dork:
+
+```bash
+site:linkedin.com/in/ "job description" "company name"
+```
+
+- Replace `"company name"` with the actual target company
+- Replace `"job description"` with a likely title (e.g. `"security analyst"`, `"marketing manager"`)
+
+This pulls profiles indexed by Google — including names that are **redacted in-app**.
+
+### Summary
+
+- Use Filters to narrow your search
+- Analyze the target profile
+- Posts/Comments Timestamp
+- Find redacted names.
+
+### 4.4 Finding LinkedIn Profile Member IDs
+
+### **Steps to Find a LinkedIn Member ID:**
+
+1.  Go to the **target’s LinkedIn profile** page.
+    
+2.  Right-click → Click **“View Page Source”** or press `Ctrl + U`.
+    
+3.  Press `Ctrl + F` to open the **search bar**.
+    
+4.  Search for:
+    
+    ```
+    member:
+    ```
+    
+5.  You’ll find a line like this:
+    
+    ```json
+    "member:123456789"
+    ```
+    
+    - The number (`123456789`) is the **LinkedIn Member ID**.
+    - It’s unique to each LinkedIn user.
+
+### ⚠️ Important Tip
+
+> **Always double-check** the ID you find.  
+> If you're logged into your own account, you might accidentally extract **your own member ID** instead of the target’s.
+
+## 5\. Other Social Media OSINT
+
+### <span style="color: rgb(255, 251, 9);">**5.1 Snapchat OSINT**</span>
+---
+
+### **Downloading Public Snapchat Stories**
+
+You can use public tools to view and download **Snapchat stories** posted by a user.
+
+#### Tool:
+
+🔗 [Snapchat Story Viewer & Downloader](https://snap.storyclone.com/)
+
+#### Steps:
+
+1. Go to: [https://snap.storyclone.com/](https://snap.storyclone.com/)
+2. Paste the **Snapchat profile URL** or **username**.
+3. The tool will display all **publicly available stories**.
+4. Download any video or image — stories often come with **timestamps**.
+
+> **Note:** Timestamps are shown in **UTC**.
+> Use tools like [savvytime.com](https://savvytime.com/converter) to convert them to your victim’s **local timezone**.
+
+
+### **Getting Snapchat Avatar (Snapcode)**
+
+You can fetch the user’s **Snapcode avatar** in high-quality SVG format.
+
+#### Use this URL:
+
+```url
+https://app.snapchat.com/web/deeplink/snapcode?username=USERNAME&type=SVG
+```
+
+* Replace `USERNAME` with the **Snapchat handle** of your target.
+* This will return their **Snapcode avatar** (scannable QR-like code) in vector format.
+
+Example:
+
+```url
+https://app.snapchat.com/web/deeplink/snapcode?username=johndoe&type=SVG
+```
+
+
+## <span style="color: rgb(115, 5, 124);">**5.2 TikTok OSINT**</span>
+---
+
+**TikTok** has over **1.3 billion users**, making it a goldmine for digital investigators. TikTok profiles, videos, and metadata often expose valuable insights that can be collected and analyzed using OSINT techniques.
+
+## **Profile Overview**
+
+When viewing a target profile, pay attention to:
+
+* **Username** vs. **Display name** (they can differ)
+* **Bio links** (may lead to other platforms)
+* **Profile Picture** (can be saved & reverse searched)
+
+## **Extracting Timestamps**
+
+### For TikTok Posts
+
+TikTok video URLs often contain a unique **video ID** that embeds a timestamp.
+
+#### Steps:
+
+1. Copy the **TikTok post URL**
+   Example:
+
+   ```
+   https://www.tiktok.com/@username/video/7234567890123456789
+   ```
+
+2. Extract the **Video ID**:
+
+   ```
+   7234567890123456789
+   ```
+
+3. Convert the ID to **binary** using:
+   [RapidTables Decimal to Binary](https://www.rapidtables.com/convert/number/decimal-to-binary.html)
+
+4. Take the **first 32 bits** of the binary output.
+
+5. Convert those 32 bits back to **decimal**.
+
+6. Paste the decimal into a **Unix timestamp converter**
+
+   * Use: [https://www.timestamp-converter.com/](https://www.timestamp-converter.com/)
+   * Or: [https://dfir.blog/unfurl/](https://dfir.blog/unfurl/) (paste full URL)
+
+You now have the **exact post time (in UTC)**.
+
+### For TikTok Comments
+
+1. Right-click on the **comment timestamp** → Click **Inspect**.
+2. Locate the **comment ID** in the HTML.
+3. Use [Unfurl](https://dfir.blog/unfurl/) — paste the **comment ID only**.
+4. It will extract and display the **timestamp**.
+
+## **Download TikTok Videos (No Watermark)**
+
+🔗 Use: [https://freetik.co/](https://freetik.co/)
+
+#### Steps:
+
+1. Copy the TikTok video URL.
+2. Go to [freetik.co](https://freetik.co/)
+3. Paste the URL and click **Download**.
+4. Choose from available formats (HD, no watermark, etc.).
+
+## **Extract Hidden Metadata**
+
+TikTok embeds hidden JSON data inside the profile page.
+
+#### Steps:
+
+1. Go to the **target’s TikTok profile**.
+2. Right-click → Click **Inspect**.
+3. Scroll down the HTML until you find:
+
+   ```html
+   <script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application/json">
+   ```
+4. Inside this tag is a full **JSON block** with metadata (followers, likes, videos, etc.)
+5. **Copy the JSON**, paste it into **Notepad**, and save as:
+
+   ```
+   target.json
+   ```
+
+You can later open and analyze it in tools like:
+
+* VS Code
+* JSONView browser extension
+* JQ (command line)
+
+
+### Summary
+- Analyze the target profile
+- Postes/Comments Timestamp
+- Download Videos
+- Extract Metadta
+

